@@ -1,0 +1,15 @@
+{
+  "source_directories": [
+    {
+      "import_root": ".",
+      "source": "."
+    }
+  ],
+  "search_path": ["."],
+  "ignore_all_errors": false,
+  "strict_handling_missing_sources": false,
+  "ignore_infer": [
+    "src/",
+    "app.py"
+  ]
+}

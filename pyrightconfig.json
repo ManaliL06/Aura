@@ -1,0 +1,12 @@
+{
+  "include": ["."],
+  "exclude": ["__pycache__", "model"],
+  "extraPaths": ["."],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnknownMemberType": "none",
+  "reportAttributeAccessIssue": "none"
+}

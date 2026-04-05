@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-aura-gold: #d4af37;
+  --color-aura-goldLight: #e5c567;
+  --color-aura-dark1: #0b0b0b;
+  --color-aura-dark2: #141414;
+  --color-aura-dark3: #1e1e1e;
+  --color-aura-dark4: #2a2a2a;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+@layer base {
+  body {
+    @apply bg-aura-dark1 text-gray-200 overflow-hidden font-sans;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-aura-dark2/80 backdrop-blur-md border border-white/5 shadow-lg;
+  }
+  
+  .glass-card {
+    @apply bg-aura-dark3/90 backdrop-blur-sm border border-white/5 rounded-2xl shadow-xl transition-all duration-300;
+  }
+
+  .gold-glow {
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-aura-gold to-aura-goldLight;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-aura-dark4 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600;
+  }
+}

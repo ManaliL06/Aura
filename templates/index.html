@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitBot AI — Fitness Chatbot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  <style>
+    /* ────────────────── RESET & BASE ────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep:   #080d18;
+      --bg-card:   #0f1524;
+      --bg-panel:  #111827;
+      --bg-input:  #141c32;
+      --border:    rgba(255,255,255,0.07);
+      --blue:      #3b82f6;
+      --blue-glow: rgba(59,130,246,0.25);
+      --purple:    #8b5cf6;
+      --green:     #10b981;
+      --amber:     #f59e0b;
+      --rose:      #f43f5e;
+      --text-1:    #f1f5f9;
+      --text-2:    #94a3b8;
+      --text-3:    #475569;
+      --radius:    14px;
+      --sidebar-w: 320px;
+    }
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-1);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* ────────────────── LAYOUT ────────────────── */
+    .layout { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ────────────────── SIDEBAR ────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--text-3) transparent;
+    }
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .icon { font-size: 2.2rem; }
+    .sidebar-logo h1 { font-size: 1.25rem; font-weight: 800; color: var(--text-1); margin-top: 4px; }
+    .sidebar-logo p  { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
+
+    .model-stats {
+      margin: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .model-stats h3 { font-size: 0.68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); font-weight: 600; margin-bottom: 12px; }
+    .stat-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 8px; }
+    .stat-label { color: var(--text-2); }
+    .stat-val   { color: var(--blue); font-weight: 600; }
+    .cat-chips  { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+    .cat-chip   { font-size: 0.68rem; padding: 2px 9px; border-radius: 20px; background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border); }
+
+    /* Sidebar tabs */
+    .sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); margin: 0 16px; gap: 4px; }
+    .tab-btn {
+      flex: 1; background: none; border: none; color: var(--text-3);
+      font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600;
+      padding: 10px 4px; cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all .2s; text-align: center;
+    }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .tab-btn:hover:not(.active) { color: var(--text-1); }
+
+    .tab-panel { display: none; padding: 16px; flex: 1; }
+    .tab-panel.active { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Calc forms */
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 0.75rem; color: var(--text-2); font-weight: 500; }
+    .form-group input, .form-group select {
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-1);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--blue); }
+    .form-group select option { background: var(--bg-panel); }
+
+    .calc-btn {
+      margin-top: 4px;
+      padding: 10px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+    }
+    .calc-btn:hover { opacity: .9; transform: translateY(-1px); }
+
+    .result-box {
+      background: rgba(59,130,246,.08);
+      border: 1px solid rgba(59,130,246,.2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: none;
+    }
+    .result-box.visible { display: block; }
+    .result-box h4 { font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .result-metric { display: flex; justify-content: space-between; font-size: 0.83rem; padding: 3px 0; }
+    .metric-k { color: var(--text-2); }
+    .metric-v { color: var(--blue); font-weight: 700; }
+    .result-advice { font-size: 0.8rem; color: var(--text-2); margin-top: 8px; line-height: 1.5; border-top: 1px solid var(--border); padding-top: 8px; }
+
+    /* ────────────────── MAIN CHAT AREA ────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top bar */
+    .topbar {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,21,36,0.8);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .topbar-icon { font-size: 1.7rem; }
+    .topbar-title { font-size: 1.1rem; font-weight: 700; }
+    .topbar-sub { font-size: 0.75rem; color: var(--text-3); margin-top: 1px; }
+    .online-dot {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--green);
+    }
+    .online-dot::before {
+      content: '';
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* Messages */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--text-3) transparent;
+    }
+
+    /* Welcome screen */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+      gap: 16px;
+      opacity: 1;
+      transition: opacity .3s;
+    }
+    .welcome-icon { font-size: 3.5rem; }
+    .welcome h2  { font-size: 1.4rem; font-weight: 700; color: var(--text-1); }
+    .welcome p   { font-size: 0.9rem; color: var(--text-3); max-width: 400px; }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+    .sug-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text-2);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .sug-btn:hover { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.3); color: var(--text-1); }
+
+    /* Message bubbles */
+    .msg-wrap { display: flex; flex-direction: column; max-width: 72%; animation: slideIn .25s ease; }
+    @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .msg-wrap.user  { align-self: flex-end; align-items: flex-end; }
+    .msg-wrap.bot   { align-self: flex-start; align-items: flex-start; }
+    .msg-label { font-size: 0.68rem; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+
+    .bubble-user {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      color: #e2e8f0;
+      border-radius: 18px 18px 4px 18px;
+      padding: 12px 16px;
+      font-size: 0.93rem;
+      line-height: 1.55;
+      box-shadow: 0 4px 14px rgba(29,78,216,.35);
+      border: 1px solid rgba(99,149,237,.18);
+    }
+    .bubble-bot {
+      background: var(--bg-card);
+      color: var(--text-1);
+      border-radius: 18px 18px 18px 4px;
+      padding: 14px 18px;
+      font-size: 0.93rem;
+      line-height: 1.65;
+      box-shadow: 0 4px 14px rgba(0,0,0,.3);
+      border: 1px solid var(--border);
+    }
+    .bubble-fallback {
+      background: linear-gradient(135deg, #1e0f30, #180b28);
+      border: 1px solid rgba(139,92,246,.2);
+      color: #c4b5fd;
+      border-radius: 18px 18px 18px 4px;
+      padding: 13px 17px;
+      font-size: 0.9rem;
+    }
+
+    /* Metadata badges */
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+    .badge-cat  { background: rgba(59,130,246,.12); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
+    .badge-sim  { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
+    .badge-conf { background: rgba(245,158,11,.12); color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+    .badge-src  { background: rgba(139,92,246,.12); color: #a78bfa; border: 1px solid rgba(139,92,246,.25); }
+    .matched-q  { font-size: 0.72rem; color: var(--text-3); font-style: italic; margin-top: 7px; }
+
+    /* Typing indicator */
+    .typing { display: flex; gap: 5px; padding: 14px 18px; align-items: center; }
+    .typing span {
+      width: 7px; height: 7px;
+      background: var(--text-3);
+      border-radius: 50%;
+      animation: bounce .9s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} }
+
+    /* ────────────────── INPUT BAR ────────────────── */
+    .input-bar {
+      padding: 16px 28px 20px;
+      border-top: 1px solid var(--border);
+      background: rgba(15,21,36,0.85);
+      backdrop-filter: blur(12px);
+    }
+    .input-row { display: flex; gap: 10px; align-items: center; }
+    #msg-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-1);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.93rem;
+      padding: 13px 18px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    #msg-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-glow); }
+    #msg-input::placeholder { color: var(--text-3); }
+    #send-btn {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 13px 18px;
+      transition: opacity .2s, transform .15s;
+      box-shadow: 0 4px 14px var(--blue-glow);
+    }
+    #send-btn:hover { opacity: .9; transform: translateY(-1px); }
+    #send-btn:disabled { opacity: .4; cursor: default; }
+    .input-hint { font-size: 0.7rem; color: var(--text-3); margin-top: 8px; text-align: center; }
+
+    /* ────────────────── SCROLLBAR ────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">🏋️</div>
+      <h1>FitBot AI</h1>
+      <p>Offline · Hybrid NLP · ML Powered</p>
+    </div>
+
+    <!-- Model stats -->
+    <div class="model-stats">
+      <h3>Model Info</h3>
+      <div class="stat-row"><span class="stat-label">Dataset</span><span class="stat-val">{{ dataset_size }} Q&amp;A pairs</span></div>
+      <div class="stat-row"><span class="stat-label">Categories</span><span class="stat-val">{{ categories|length }}</span></div>
+      <div class="stat-row"><span class="stat-label">Mode</span><span class="stat-val" style="color:var(--green)">Offline ✓</span></div>
+      <div class="cat-chips">
+        {% for cat in categories %}
+        <span class="cat-chip">{{ cat.replace('_',' ') }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Calculator tabs -->
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" onclick="switchTab('bmi',this)">BMI</button>
+      <button class="tab-btn" onclick="switchTab('prot',this)">Protein</button>
+      <button class="tab-btn" onclick="switchTab('cal',this)">Calories</button>
+    </div>
+
+    <!-- BMI tab -->
+    <div class="tab-panel active" id="tab-bmi">
+      <div class="form-group"><label>Weight (kg)</label><input type="number" id="bmi-w" value="70" step="0.5" min="20" max="300"></div>
+      <div class="form-group"><label>Height (cm)</label><input type="number" id="bmi-h" value="170" step="0.5" min="100" max="250"></div>
+      <button class="calc-btn" onclick="calcBmi()">⚖️  Calculate BMI</button>
+      <div class="result-box" id="bmi-result">
+        <h4>Result</h4>
+        <div class="result-metric"><span class="metric-k">BMI</span><span class="metric-v" id="r-bmi">—</span></div>
+        <div class="result-metric"><span class="metric-k">Category</span><span class="metric-v" id="r-bmi-cat">—</span></div>
+        <div class="result-advice" id="r-bmi-adv"></div>
+      </div>
+    </div>
+
+    <!-- Protein tab -->
+    <div class="tab-panel" id="tab-prot">
+      <div class="form-group"><label>Weight (kg)</label><input type="number" id="prot-w" value="70" step="0.5" min="20" max="300"></div>
+      <div class="form-group">
+        <label>Activity Level</label>
+        <select id="prot-lvl">
+          <option value="sedentary">Sedentary</option>
+          <option value="lightly_active">Lightly Active</option>
+          <option value="moderately_active" selected>Moderately Active</option>
+          <option value="very_active">Very Active</option>
+          <option value="athlete">Athlete</option>
+        </select>
+      </div>
+      <button class="calc-btn" onclick="calcProtein()">🥩  Calculate Protein</button>
+      <div class="result-box" id="prot-result">
+        <h4>Result</h4>
+        <div class="result-metric"><span class="metric-k">Daily Protein</span><span class="metric-v" id="r-prot">—</span></div>
+        <div class="result-metric"><span class="metric-k">Factor</span><span class="metric-v" id="r-prot-f">—</span></div>
+      </div>
+    </div>
+
+    <!-- Calories tab -->
+    <div class="tab-panel" id="tab-cal">
+      <div class="form-group"><label>Weight (kg)</label><input type="number" id="cal-w" value="70" step="0.5" min="20" max="300"></div>
+      <div class="form-group"><label>Height (cm)</label><input type="number" id="cal-h" value="170" step="0.5" min="100" max="250"></div>
+      <div class="form-group"><label>Age</label><input type="number" id="cal-age" value="25" min="10" max="100"></div>
+      <div class="form-group">
+        <label>Gender</label>
+        <select id="cal-gen"><option value="male">Male</option><option value="female">Female</option></select>
+      </div>
+      <div class="form-group">
+        <label>Activity Level</label>
+        <select id="cal-lvl">
+          <option value="sedentary">Sedentary</option>
+          <option value="lightly_active">Lightly Active</option>
+          <option value="moderately_active" selected>Moderately Active</option>
+          <option value="very_active">Very Active</option>
+          <option value="extra_active">Extra Active</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Goal</label>
+        <select id="cal-goal"><option value="maintain">Maintain</option><option value="lose">Lose Fat</option><option value="gain">Gain Muscle</option></select>
+      </div>
+      <button class="calc-btn" onclick="calcCalorie()">🔥  Calculate Calories</button>
+      <div class="result-box" id="cal-result">
+        <h4>Result</h4>
+        <div class="result-metric"><span class="metric-k">BMR</span><span class="metric-v" id="r-bmr">—</span></div>
+        <div class="result-metric"><span class="metric-k">TDEE</span><span class="metric-v" id="r-tdee">—</span></div>
+        <div class="result-metric"><span class="metric-k">Target</span><span class="metric-v" id="r-target">—</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN CHAT ═══ -->
+  <main class="main">
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-icon">🤖</div>
+      <div>
+        <div class="topbar-title">FitBot AI Assistant</div>
+        <div class="topbar-sub">Hybrid Intent Classification + Semantic Search</div>
+      </div>
+      <div class="online-dot">Model Ready</div>
+    </div>
+
+    <!-- Messages area -->
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">💪</div>
+        <h2>Ask me anything about fitness!</h2>
+        <p>I can help with workouts, diet, fat loss, muscle gain, supplements, and injury prevention.</p>
+        <div class="suggestions">
+          <button class="sug-btn" onclick="sendSuggestion(this)">How do I build muscle as a beginner?</button>
+          <button class="sug-btn" onclick="sendSuggestion(this)">Best foods for fat loss?</button>
+          <button class="sug-btn" onclick="sendSuggestion(this)">How to prevent knee pain when squatting?</button>
+          <button class="sug-btn" onclick="sendSuggestion(this)">Does creatine actually work?</button>
+          <button class="sug-btn" onclick="sendSuggestion(this)">What should I eat after a workout?</button>
+          <button class="sug-btn" onclick="sendSuggestion(this)">How many days a week should I train?</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input bar -->
+    <div class="input-bar">
+      <div class="input-row">
+        <input id="msg-input" type="text" placeholder="Ask a fitness question…" autocomplete="off">
+        <button id="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="input-hint">Press Enter to send &nbsp;·&nbsp; Use the sidebar for health calculators</div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // ── Tab switcher ──────────────────────────────────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── Utility: hide welcome screen ─────────────────────────────────────────
+  function hideWelcome() {
+    const w = document.getElementById('welcome');
+    if (w) w.remove();
+  }
+
+  // ── Append message bubble ─────────────────────────────────────────────────
+  function appendBubble(role, text, meta) {
+    hideWelcome();
+    const box = document.getElementById('messages');
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-wrap ' + role;
+
+    const label = document.createElement('div');
+    label.className = 'msg-label';
+    label.textContent = role === 'user' ? 'You' : 'FitBot';
+    wrap.appendChild(label);
+
+    const bubble = document.createElement('div');
+
+    if (role === 'user') {
+      bubble.className = 'bubble-user';
+      bubble.textContent = text;
+    } else {
+      const isFallback = meta && meta.is_fallback;
+      bubble.className = isFallback ? 'bubble-fallback' : 'bubble-bot';
+      bubble.textContent = text;
+
+      if (meta && !isFallback) {
+        const cat    = (meta.category || '').replace(/_/g,' ');
+        const catRaw = meta.category || '';
+        const sim    = (meta.similarity || 0).toFixed(1);
+        const conf   = (meta.intent_confidence || 0).toFixed(1);
+        const src    = meta.source || '';
+        const mq     = meta.matched_q || '';
+
+        const badges = document.createElement('div');
+        badges.className = 'badges';
+        badges.innerHTML = `
+          <span class="badge badge-cat">📂 ${cat || 'unknown'}</span>
+          <span class="badge badge-sim">📊 ${sim}% match</span>
+          <span class="badge badge-conf">🧠 ${conf}% confidence</span>
+          <span class="badge badge-src">⚡ ${src}</span>`;
+        bubble.appendChild(badges);
+
+        if (mq) {
+          const mq_el = document.createElement('div');
+          mq_el.className = 'matched-q';
+          mq_el.textContent = '🔍 Matched: ' + (mq.length > 80 ? mq.slice(0,80) + '…' : mq);
+          bubble.appendChild(mq_el);
+        }
+      }
+    }
+
+    wrap.appendChild(bubble);
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // ── Typing indicator ──────────────────────────────────────────────────────
+  function showTyping() {
+    hideWelcome();
+    const box = document.getElementById('messages');
+    const el = document.createElement('div');
+    el.id = 'typing-indicator';
+    el.className = 'msg-wrap bot';
+    el.innerHTML = '<div class="bubble-bot typing"><span></span><span></span><span></span></div>';
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  }
+  function hideTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  // ── Send message ──────────────────────────────────────────────────────────
+  async function sendMessage(text) {
+    const input = document.getElementById('msg-input');
+    const msg   = text || input.value.trim();
+    if (!msg) return;
+
+    if (!text) input.value = '';
+    document.getElementById('send-btn').disabled = true;
+
+    appendBubble('user', msg, null);
+    showTyping();
+
+    try {
+      const res  = await fetch('/api/chat', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ message: msg }),
+      });
+      const data = await res.json();
+      hideTyping();
+      appendBubble('bot', data.answer, data);
+    } catch (e) {
+      hideTyping();
+      appendBubble('bot', '⚠ Could not reach the server. Make sure web_app.py is running.', null);
+    }
+
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('msg-input').focus();
+  }
+
+  function sendSuggestion(btn) { sendMessage(btn.textContent); }
+
+  // Enter key
+  document.getElementById('msg-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  // ── BMI Calculator ────────────────────────────────────────────────────────
+  async function calcBmi() {
+    const w = parseFloat(document.getElementById('bmi-w').value);
+    const h = parseFloat(document.getElementById('bmi-h').value);
+    const res = await fetch('/api/bmi', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({weight_kg:w,height_cm:h}) });
+    const d = await res.json();
+    if (d.error) return alert(d.error);
+    document.getElementById('r-bmi').textContent     = d.bmi;
+    document.getElementById('r-bmi-cat').textContent = d.category;
+    document.getElementById('r-bmi-adv').textContent = d.advice;
+    document.getElementById('bmi-result').classList.add('visible');
+  }
+
+  // ── Protein Calculator ────────────────────────────────────────────────────
+  async function calcProtein() {
+    const w   = parseFloat(document.getElementById('prot-w').value);
+    const lvl = document.getElementById('prot-lvl').value;
+    const res = await fetch('/api/protein', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({weight_kg:w,activity_level:lvl}) });
+    const d = await res.json();
+    if (d.error) return alert(d.error);
+    document.getElementById('r-prot').textContent   = d.protein_g + ' g / day';
+    document.getElementById('r-prot-f').textContent = d.factor + ' g/kg × ' + w + ' kg';
+    document.getElementById('prot-result').classList.add('visible');
+  }
+
+  // ── Calorie Calculator ────────────────────────────────────────────────────
+  async function calcCalorie() {
+    const payload = {
+      weight_kg:      parseFloat(document.getElementById('cal-w').value),
+      height_cm:      parseFloat(document.getElementById('cal-h').value),
+      age:            parseInt(document.getElementById('cal-age').value),
+      gender:         document.getElementById('cal-gen').value,
+      activity_level: document.getElementById('cal-lvl').value,
+      goal:           document.getElementById('cal-goal').value,
+    };
+    const res = await fetch('/api/calorie', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const d = await res.json();
+    if (d.error) return alert(d.error);
+    document.getElementById('r-bmr').textContent    = d.bmr + ' kcal';
+    document.getElementById('r-tdee').textContent   = d.tdee + ' kcal';
+    document.getElementById('r-target').textContent = d.target_calories + ' kcal';
+    document.getElementById('cal-result').classList.add('visible');
+  }
+</script>
+</body>
+</html>
